@@ -1,0 +1,46 @@
+name: Build WebGL (Yandex)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build-webgl:
+    name: Build WebGL in cloud
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-WebGL-${{ github.ref }}
+          restore-keys: |
+            Library-WebGL-
+            Library-
+
+      - name: Unity - Build WebGL
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: 6000.3.2f1
+          targetPlatform: WebGL
+          image: unityci/editor:ubuntu-6000.3.2f1-webgl-3.2.2
+          buildMethod: EchoOfAncients.EditorTools.WebGLBuilder.BuildForCI
+          allowDirtyBuild: true
+
+      - name: Pack ZIP for Yandex Games
+        shell: bash
+        run: |
+          cd build/WebGL
+          zip -r ../webgl-build.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebGL-build
+          path: build/webgl-build.zip
+          retention-days: 14
